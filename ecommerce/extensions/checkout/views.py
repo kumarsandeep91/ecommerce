@@ -80,3 +80,30 @@ class CancelCheckoutView(TemplateView):
             'payment_support_email': self.request.site.siteconfiguration.payment_support_email,
         })
         return context
+
+
+class CheckoutErrorView(TemplateView):
+    """ Displays an error page when checkout does not complete successfully. """
+
+    template_name = 'checkout/error.html'
+
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        """
+        Request needs to be csrf_exempt to handle CyberSource's POST response.
+        """
+        return super(CheckoutErrorView, self).dispatch(*args, **kwargs)
+
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+        """
+        Allow CyberSource's post back.
+        """
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = super(CheckoutErrorView, self).get_context_data(**kwargs)
+        context.update({
+            'payment_support_email': self.request.site.siteconfiguration.payment_support_email,
+        })
+        return context
