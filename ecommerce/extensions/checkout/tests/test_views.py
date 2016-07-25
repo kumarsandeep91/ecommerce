@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.core.urlresolvers import reverse
 from django.conf import settings
-import httpretty
+import ddt, httpretty
 from oscar.core.loading import get_model
 from oscar.test import newfactories as factories
 
@@ -88,3 +88,62 @@ class CancelCheckoutViewTests(TestCase):
         self.assertEqual(
             response.context['payment_support_email'], self.request.site.siteconfiguration.payment_support_email
         )
+
+
+@ddt.ddt
+class ReceiptViewTests(TestCase):
+    """
+    Tests for the receipt view.
+    """
+
+    path = reverse('checkout:receipt')
+
+    def setUp(self):
+        super(ReceiptViewTests, self).setUp()
+        self.user = self.create_user()
+        self.login()
+
+    def login(self):
+        self.client.login(username=self.user.username, password=self.password)
+
+    def test_login_required(self):
+        """ The view should redirect to the login page if the user is not logged in. """
+        self.client.logout()
+        response = self.client.post(self.path)
+        self.assertEqual(response.status_code, 302)
+
+    @httpretty.activate
+    def post_to_receipt_page(self, post_data):
+        """ DRY helper """
+        httpretty.register_uri(httpretty.POST, self.path, body=post_data)
+
+        response = self.client.post(self.path, params={'basket_id': 1}, data=post_data)
+        self.assertEqual(response.status_code, 200)
+        return response
+
+    @ddt.data('ACCEPT', 'REJECT', 'ERROR') # check with how we handle decision
+    def test_cybersource_decision(self, decision):
+        """
+        Ensure the view renders a page appropriately depending on the Cybersource decision.
+        """
+        self.login()
+        post_data = {'decision': decision, 'reason_code': '200', 'signed_field_names': 'dummy'}
+        expected_pattern = r"<title>(\s+)Receipt" if decision == 'ACCEPT' else r"<title>(\s+)Payment Failed"
+        response = self.post_to_receipt_page(post_data)
+        self.assertRegexpMatches(response.content, expected_pattern)
+
+    def test_hide_nav_header(self):
+        self.login()
+        post_data = {'decision': 'ACCEPT', 'reason_code': '200', 'signed_field_names': 'dummy'}
+        response = self.post_to_receipt_page(post_data)
+
+        # Verify that the header navigation links are hidden for the edx.org version
+        self.assertNotContains(response, "How it Works")
+        self.assertNotContains(response, "Find courses")
+        self.assertNotContains(response, "Schools & Partners")
+
+    def test_logged_out_user_cannot_access_receipt(self):
+        """
+        Ensure that only users who are logged in can view receipts.
+        """
+        pass
