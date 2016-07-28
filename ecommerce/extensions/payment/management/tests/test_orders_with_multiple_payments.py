@@ -106,7 +106,7 @@ class TestOrdersWithMultiplePaymentsCommand(PaypalMixin, CybersourceMixin, Payme
         self.client.get(reverse('paypal_execute'), self.RETURN_DATA)
         # Check order has been created after the payment
         order = Order.objects.get(basket_id=self.basket.id)
-        self.assertIsNotNone(order, 'No order was created for the basket after payment.')
+        self.assertIsNotNone(order)
         # Remove 'update_time' as it's never a part of real first paypal response.
         payment_response = PaymentProcessorResponse.objects.first()
         del payment_response.response[u'update_time']

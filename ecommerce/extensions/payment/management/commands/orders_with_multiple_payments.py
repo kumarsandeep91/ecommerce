@@ -36,7 +36,7 @@ class Command(BaseCommand):
         if start_date >= end_date:
             raise CommandError("Argument `Start Date` must be less than `End Date`.")
 
-        orders = Order.objects.filter(date_placed__range=(start_date, end_date)).filter(total_incl_tax__gt=0)
+        orders = Order.objects.filter(date_placed__range=(start_date, end_date), total_incl_tax__gt=0)
         for order in orders:
             if self.number_of_payments_for_order(order) > 1:
                 print str(order.number)
