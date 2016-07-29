@@ -121,7 +121,7 @@ class ReceiptViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         return response
 
-    @ddt.data('ACCEPT', 'REJECT', 'ERROR') # check with how we handle decision
+    @ddt.data('ACCEPT', 'REJECT', 'ERROR')
     def test_cybersource_decision(self, decision):
         """
         Ensure the view renders a page appropriately depending on the Cybersource decision.
@@ -133,17 +133,13 @@ class ReceiptViewTests(TestCase):
         self.assertRegexpMatches(response.content, expected_pattern)
 
     def test_hide_nav_header(self):
+        """
+        Verify that the header navigation links are hidden for the edx.org version
+        """
         self.login()
         post_data = {'decision': 'ACCEPT', 'reason_code': '200', 'signed_field_names': 'dummy'}
         response = self.post_to_receipt_page(post_data)
 
-        # Verify that the header navigation links are hidden for the edx.org version
         self.assertNotContains(response, "How it Works")
         self.assertNotContains(response, "Find courses")
         self.assertNotContains(response, "Schools & Partners")
-
-    def test_logged_out_user_cannot_access_receipt(self):
-        """
-        Ensure that only users who are logged in can view receipts.
-        """
-        pass
