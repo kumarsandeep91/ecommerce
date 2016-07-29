@@ -278,14 +278,24 @@ class AtomicPublicationSerializer(serializers.Serializer):  # pylint: disable=ab
         course_verification_deadline = self.validated_data.get('verification_deadline')
         products = self.validated_data['products']
         partner = self.get_partner()
+        partner_org = partner.org
 
         try:
             if not waffle.switch_is_active('publish_course_modes_to_lms'):
+                # if waffle switch is not on from Django admin
                 message = _(
                     u'Course [{course_id}] was not published to LMS '
                     u'because the switch [publish_course_modes_to_lms] is disabled. '
                     u'To avoid ghost SKUs, data has not been saved.'
                 ).format(course_id=course_id)
+
+                raise Exception(message)
+            elif partner_org and course_id.find(partner_org) == -1:
+                # if partner has org set, and course is not from that org
+                message = _(
+                    u'Course [{course_id}] is not saved. '
+                    u'Courses only form organization {partner_org} will be saved.'
+                ).format(course_id=course_id, partner_org=partner_org)
 
                 raise Exception(message)
 
