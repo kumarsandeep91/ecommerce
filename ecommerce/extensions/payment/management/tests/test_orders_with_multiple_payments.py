@@ -1,3 +1,4 @@
+import datetime
 import ddt
 from factory.django import mute_signals
 from django.core.urlresolvers import reverse
@@ -85,6 +86,9 @@ class TestOrdersWithMultiplePaymentsCommand(PaypalMixin, CybersourceMixin, Payme
         response.save()
         # Test method returns no of payments equal to 2
         self.assertEquals(Command.number_of_payments_for_order(order), 2)
+        order.date_placed = datetime.datetime.strptime('01-02-2016', '%d-%m-%Y')
+        order.save()
+        call_command('orders_with_multiple_payments', '01-01-2016', '01-02-2016')
         # Change one Response to refund from payment
         response.response[u'reconciliationID'] = u'32764148197'
         del response.response[u'req_transaction_type']
@@ -124,3 +128,6 @@ class TestOrdersWithMultiplePaymentsCommand(PaypalMixin, CybersourceMixin, Payme
         payment_response.id = 3
         payment_response.save()
         self.assertEquals(Command.number_of_payments_for_order(order), 2)
+        order.date_placed = datetime.datetime.strptime('01-02-2016', '%d-%m-%Y')
+        order.save()
+        call_command('orders_with_multiple_payments', '01-01-2016', '01-02-2016')
