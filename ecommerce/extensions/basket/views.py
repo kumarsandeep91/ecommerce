@@ -99,6 +99,8 @@ class BasketSummaryView(BasketView):
         lines_data = []
         is_verification_required = is_bulk_purchase = False
         switch_link_text = partner_sku = ''
+        site_configuration = self.request.site.siteconfiguration
+        basket_layout = site_configuration.basket_layout
 
         for line in lines:
             course_key = CourseKey.from_string(line.product.attr.course_key)
@@ -115,7 +117,7 @@ class BasketSummaryView(BasketView):
 
             # Set to true if any course in basket has bulk purchase scenario
             if line.product.get_product_class().name == ENROLLMENT_CODE_PRODUCT_CLASS_NAME and \
-                    self.request.site.siteconfiguration.enable_enrollment_codes:
+                    site_configuration.enable_enrollment_codes:
                 is_bulk_purchase = True
                 # Iterate on message storage so all messages are marked as read
                 list(messages.get_messages(self.request))
@@ -143,7 +145,7 @@ class BasketSummaryView(BasketView):
             context.update({
                 'analytics_data': prepare_analytics_data(
                     self.request.user,
-                    self.request.site.siteconfiguration.segment_key,
+                    site_configuration.segment_key,
                     unicode(course_key)
                 ),
             })
@@ -156,7 +158,9 @@ class BasketSummaryView(BasketView):
 
         context.update({
             'free_basket': context['order_total'].incl_tax == 0,
-            'payment_processors': self.request.site.siteconfiguration.get_payment_processors().values(),
+            'basket_layout_template': 'oscar/basket/partials/_{layout}.html'.format(layout=basket_layout),
+            'checkout_template': site_configuration.checkout_template,
+            'payment_processors': site_configuration.get_payment_processors().values(),
             'homepage_url': get_lms_url(''),
             'formset_lines_data': zip(formset, lines_data),
             'is_verification_required': is_verification_required,
